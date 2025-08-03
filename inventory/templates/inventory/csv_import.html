@@ -1,0 +1,88 @@
+<!-- templates/inventory/csv_import.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}Importar CSV - Sistema de Inventario{% endblock %}
+{% block page_title %}Importación masiva por CSV{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-import"></i> Importar productos desde CSV
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Instrucciones -->
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle"></i> Instrucciones para el archivo CSV
+                    </h6>
+                    <p class="mb-2">El archivo CSV debe contener las siguientes columnas obligatorias:</p>
+                    <ul class="mb-2">
+                        <li><strong>code</strong>: Código único del producto</li>
+                        <li><strong>name</strong>: Nombre del producto</li>
+                        <li><strong>category</strong>: Nombre de la categoría</li>
+                        <li><strong>supplier</strong>: Nombre del proveedor</li>
+                        <li><strong>unit_price</strong>: Precio unitario (formato: 12.50)</li>
+                    </ul>
+                    <p class="mb-2">Columnas opcionales:</p>
+                    <ul class="mb-0">
+                        <li><strong>description</strong>: Descripción del producto</li>
+                        <li><strong>minimum_stock</strong>: Stock mínimo (por defecto: 10)</li>
+                        <li><strong>maximum_stock</strong>: Stock máximo (por defecto: 1000)</li>
+                        <li><strong>current_stock</strong>: Stock actual (por defecto: 0)</li>
+                    </ul>
+                </div>
+                
+                <!-- Ejemplo -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Ejemplo de archivo CSV</h6>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3 rounded"><code>code,name,description,category,supplier,unit_price,minimum_stock,maximum_stock,current_stock
+PROD001,Laptop Dell XPS,Laptop profesional,Computadoras,Dell Inc,1200.00,5,50,25
+PROD002,Mouse inalámbrico,Mouse Bluetooth,Accesorios,Logitech,35.99,20,200,100
+PROD003,Teclado mecánico,Teclado gaming,Accesorios,Razer,89.99,10,100,45</code></pre>
+                    </div>
+                </div>
+                
+                <!-- Formulario de importación -->
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.csv_file.label_tag }}
+                        {{ form.csv_file }}
+                        {% if form.csv_file.errors %}
+                            <div class="text-danger small">
+                                {{ form.csv_file.errors|first }}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Selecciona un archivo CSV con los productos a importar.</small>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Importante:</strong> Si un producto con el mismo código ya existe, 
+                        será actualizado con los nuevos datos. Las categorías y proveedores se 
+                        crearán automáticamente si no existen.
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Importar productos
+                        </button>
+                        <a href="{% url 'product_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

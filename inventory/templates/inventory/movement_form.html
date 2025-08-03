@@ -1,0 +1,190 @@
+
+<!-- templates/inventory/movement_form.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Inventario{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="movement-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.product.label_tag }}
+                                {{ form.product }}
+                                {% if form.product.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.product.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.movement_type.label_tag }}
+                                {{ form.movement_type }}
+                                {% if form.movement_type.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.movement_type.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Información del producto seleccionado -->
+                    <div id="product-info" class="alert alert-info" style="display: none;">
+                        <h6 class="mb-2">Información del producto:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small><strong>Stock actual:</strong> <span id="current-stock">-</span></small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>Stock mínimo:</strong> <span id="minimum-stock">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.quantity.label_tag }}
+                                {{ form.quantity }}
+                                {% if form.quantity.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.quantity.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.unit_price.label_tag }}
+                                {{ form.unit_price }}
+                                {% if form.unit_price.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.unit_price.errors|first }}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Opcional para salidas y ajustes</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.reference.label_tag }}
+                        {{ form.reference }}
+                        {% if form.reference.errors %}
+                            <div class="text-danger small">
+                                {{ form.reference.errors|first }}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Ej: Factura #123, Pedido #456, etc.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.notes.label_tag }}
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">
+                                {{ form.notes.errors|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Registrar Movimiento
+                        </button>
+                        <a href="{% url 'movement_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('id_product');
+    const productInfo = document.getElementById('product-info');
+    const currentStockSpan = document.getElementById('current-stock');
+    const minimumStockSpan = document.getElementById('minimum-stock');
+    const quantityInput = document.getElementById('id_quantity');
+    const movementTypeSelect = document.getElementById('id_movement_type');
+    
+    // Pre-seleccionar producto y tipo si vienen en URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('product')) {
+        productSelect.value = urlParams.get('product');
+        updateProductInfo();
+    }
+    if (urlParams.get('type')) {
+        movementTypeSelect.value = urlParams.get('type');
+    }
+    
+    productSelect.addEventListener('change', updateProductInfo);
+    
+    function updateProductInfo() {
+        const productId = productSelect.value;
+        if (productId) {
+            // Simular obtención de datos del producto
+            // En una implementación real, harías una llamada AJAX
+            const option = productSelect.options[productSelect.selectedIndex];
+            if (option.dataset.stock !== undefined) {
+                currentStockSpan.textContent = option.dataset.stock;
+                minimumStockSpan.textContent = option.dataset.minStock;
+                productInfo.style.display = 'block';
+            }
+        } else {
+            productInfo.style.display = 'none';
+        }
+    }
+    
+    // Validación en tiempo real para salidas
+    quantityInput.addEventListener('input', function() {
+        const movementType = movementTypeSelect.value;
+        const quantity = parseInt(quantityInput.value) || 0;
+        //const currentStock = parseInt(currentStockSpan.textContent) || 0;
+        
+        if (movementType === 'OUT' && quantity > currentStock) {
+            quantityInput.classList.add('is-invalid');
+            if (!document.getElementById('stock-warning')) {
+                const warning = document.createElement('div');
+                warning.id = 'stock-warning';
+                warning.className = 'text-danger small';
+                warning.textContent = `Stock insuficiente. Stock actual: ${currentStock}`;
+                quantityInput.parentNode.appendChild(warning);
+            }
+        } else {
+            quantityInput.classList.remove('is-invalid');
+            const warning = document.getElementById('stock-warning');
+            if (warning) {
+                warning.remove();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

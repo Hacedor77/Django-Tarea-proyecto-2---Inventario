@@ -1,0 +1,226 @@
+<!-- templates/inventory/dashboard.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}Dashboard - Sistema de Inventario{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-boxes fa-2x mb-2"></i>
+                <h3>{{ total_products }}</h3>
+                <p class="mb-0">Productos Activos</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card-success">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h3>{{ total_suppliers }}</h3>
+                <p class="mb-0">Proveedores</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <h3>{{ low_stock_products }}</h3>
+                <p class="mb-0">Stock Bajo</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card-danger">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <h3>{{ out_of_stock }}</h3>
+                <p class="mb-0">Sin Stock</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Gráfico de movimientos -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> Movimientos de los últimos 7 días
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="movementsChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Productos con stock bajo -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle text-warning"></i> Stock Bajo
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock_list %}
+                    <div class="list-group list-group-flush">
+                        {% for product in low_stock_list %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <strong>{{ product.name }}</strong><br>
+                                    <small class="text-muted">{{ product.code }}</small>
+                                </div>
+                                <span class="badge badge-low-stock">
+                                    {{ product.current_stock }}/{{ product.minimum_stock }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'low_stock_alerts' %}" class="btn btn-warning btn-sm">
+                            Ver todas las alertas
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No hay productos con stock bajo.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Movimientos recientes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> Movimientos Recientes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_movements %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Tipo</th>
+                                    <th>Cantidad</th>
+                                    <th>Usuario</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in recent_movements %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ movement.product.name }}</strong><br>
+                                            <small class="text-muted">{{ movement.product.code }}</small>
+                                        </td>
+                                        <td>
+                                            {% if movement.movement_type == 'IN' %}
+                                                <span class="badge bg-success">Entrada</span>
+                                            {% elif movement.movement_type == 'OUT' %}
+                                                <span class="badge bg-danger">Salida</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Ajuste</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ movement.quantity }}</td>
+                                        <td>{{ movement.created_by.username }}</td>
+                                        <td>{{ movement.created_at|date:"d/m/Y H:i" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'movement_list' %}" class="btn btn-primary">
+                            Ver todos los movimientos
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No hay movimientos registrados.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de movimientos
+    const ctx = document.getElementById('movementsChart').getContext('2d');
+    const movementsData = {{ daily_movements|safe }};
+    
+    const labels = movementsData.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: '2-digit' 
+        });
+    });
+    
+    const entriesData = movementsData.map(item => item.entries);
+    const exitsData = movementsData.map(item => item.exits);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Entradas',
+                data: entriesData,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Salidas',
+                data: exitsData,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

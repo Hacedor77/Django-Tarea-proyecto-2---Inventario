@@ -1,0 +1,139 @@
+
+<!-- templates/inventory/low_stock_alerts.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}Alertas de Stock - Sistema de Inventario{% endblock %}
+{% block page_title %}Alertas de Stock Bajo{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Alertas de Stock Bajo</h2>
+    <a href="{% url 'product_list' %}?stock_status=low" class="btn btn-outline-primary">
+        <i class="fas fa-list"></i> Ver productos con stock bajo
+    </a>
+</div>
+
+{% if alerts %}
+    <div class="row">
+        {% for alert in alerts %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            {{ alert.product.name }}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center mb-3">
+                            <div class="col">
+                                <h4 class="text-danger mb-0">{{ alert.current_stock }}</h4>
+                                <small class="text-muted">Stock actual</small>
+                            </div>
+                            <div class="col">
+                                <h4 class="text-warning mb-0">{{ alert.minimum_stock }}</h4>
+                                <small class="text-muted">Stock mínimo</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Código:</strong> <code>{{ alert.product.code }}</code><br>
+                            <strong>Categoría:</strong> {{ alert.product.category.name }}<br>
+                            <strong>Proveedor:</strong> {{ alert.product.supplier.name }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> 
+                                Alerta creada: {{ alert.created_at|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'movement_create' %}?product={{ alert.product.pk }}&type=IN" 
+                               class="btn btn-success btn-sm">
+                                <i class="fas fa-plus"></i> Entrada de stock
+                            </a>
+                            
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'product_detail' alert.product.pk %}" 
+                                   class="btn btn-outline-info">
+                                    <i class="fas fa-eye"></i> Ver producto
+                                </a>
+                                
+                                <form method="post" action="{% url 'resolve_alert' alert.id %}" 
+                                      class="d-inline" 
+                                      onsubmit="return confirm('¿Marcar esta alerta como resuelta?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-secondary">
+                                        <i class="fas fa-check"></i> Resolver
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                            <h4>{{ alerts.count }}</h4>
+                            <p class="text-muted mb-0">Alertas activas</p>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-boxes fa-2x text-info mb-2"></i>
+                            <h4>{{ alerts|length }}</h4>
+                            <p class="text-muted mb-0">Productos afectados</p>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                            <h4 id="urgency-percentage">-</h4>
+                            <p class="text-muted mb-0">Nivel de urgencia</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+        <h3 class="text-success">¡Excelente!</h3>
+        <p class="text-muted">No hay productos con stock bajo en este momento.</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary">
+            <i class="fas fa-boxes"></i> Ver todos los productos
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if alerts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcular nivel de urgencia basado en qué tan bajo está el stock
+    const alerts = {{ alerts|length }};
+    let urgentAlerts = 0;
+    
+    {% for alert in alerts %}
+        {% if alert.current_stock == 0 %}
+            urgentAlerts++;
+        {% elif alert.current_stock <= alert.minimum_stock_threshold %}
+            urgentAlerts += 0.5;
+        {% endif %}
+    {% endfor %}
+    
+    const urgencyPercentage = Math.round((urgentAlerts / alerts) * 100);
+    document.getElementById('urgency-percentage').textContent = urgencyPercentage + '%';
+});
+</script>
+{% endif %}
+{% endblock %}

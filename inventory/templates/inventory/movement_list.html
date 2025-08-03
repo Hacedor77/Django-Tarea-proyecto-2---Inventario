@@ -1,0 +1,166 @@
+<!-- templates/inventory/movement_list.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}Movimientos - Sistema de Inventario{% endblock %}
+{% block page_title %}Movimientos de Stock{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Movimientos de Stock</h2>
+    <a href="{% url 'movement_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo Movimiento
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ form.product.label_tag }}
+                {{ form.product }}
+            </div>
+            <div class="col-md-2">
+                {{ form.movement_type.label_tag }}
+                {{ form.movement_type }}
+            </div>
+            <div class="col-md-3">
+                {{ form.date_from.label_tag }}
+                {{ form.date_from }}
+            </div>
+            <div class="col-md-3">
+                {{ form.date_to.label_tag }}
+                {{ form.date_to }}
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'movement_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de movimientos -->
+<div class="card">
+    <div class="card-body">
+        {% if movements %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Tipo</th>
+                            <th>Cantidad</th>
+                            <th>Stock Anterior</th>
+                            <th>Nuevo Stock</th>
+                            <th>Precio Unit.</th>
+                            <th>Total</th>
+                            <th>Usuario</th>
+                            <th>Referencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in movements %}
+                            <tr>
+                                <td>{{ movement.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'product_detail' movement.product.pk %}" class="text-decoration-none">
+                                        <strong>{{ movement.product.name }}</strong>
+                                    </a>
+                                    <br><small class="text-muted">{{ movement.product.code }}</small>
+                                </td>
+                                <td>
+                                    {% if movement.movement_type == 'IN' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-arrow-up"></i> Entrada
+                                        </span>
+                                    {% elif movement.movement_type == 'OUT' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-arrow-down"></i> Salida
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-tools"></i> Ajuste
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold">{{ movement.quantity }}</td>
+                                <td>{{ movement.previous_stock }}</td>
+                                <td class="fw-bold">{{ movement.new_stock }}</td>
+                                <td>
+                                    {% if movement.unit_price %}
+                                        ${{ movement.unit_price }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if movement.total_value %}
+                                        ${{ movement.total_value }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ movement.created_by.username }}</td>
+                                <td>{{ movement.reference|default:"-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Navegación de páginas">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.product %}&product={{ request.GET.product }}{% endif %}{% if request.GET.movement_type %}&movement_type={{ request.GET.movement_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    &laquo; Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.product %}&product={{ request.GET.product }}{% endif %}{% if request.GET.movement_type %}&movement_type={{ request.GET.movement_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.product %}&product={{ request.GET.product }}{% endif %}{% if request.GET.movement_type %}&movement_type={{ request.GET.movement_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    Siguiente &raquo;
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No se encontraron movimientos</h5>
+                <p class="text-muted">Intenta modificar los filtros o registra un nuevo movimiento.</p>
+                <a href="{% url 'movement_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Registrar Movimiento
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

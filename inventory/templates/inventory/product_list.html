@@ -1,0 +1,160 @@
+<!-- templates/inventory/product_list.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}Productos - Sistema de Inventario{% endblock %}
+{% block page_title %}Gestión de Productos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Lista de Productos</h2>
+    <a href="{% url 'product_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo Producto
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ form.category.label_tag }}
+                {{ form.category }}
+            </div>
+            <div class="col-md-3">
+                {{ form.supplier.label_tag }}
+                {{ form.supplier }}
+            </div>
+            <div class="col-md-2">
+                {{ form.stock_status.label_tag }}
+                {{ form.stock_status }}
+            </div>
+            <div class="col-md-3">
+                {{ form.search.label_tag }}
+                {{ form.search }}
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de productos -->
+<div class="card">
+    <div class="card-body">
+        {% if products %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th>Proveedor</th>
+                            <th>Stock Actual</th>
+                            <th>Stock Mínimo</th>
+                            <th>Estado</th>
+                            <th>Precio</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td><code>{{ product.code }}</code></td>
+                                <td>
+                                    <strong>{{ product.name }}</strong>
+                                    {% if product.description %}
+                                        <br><small class="text-muted">{{ product.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ product.category.name }}</td>
+                                <td>{{ product.supplier.name }}</td>
+                                <td>
+                                    <span class="fw-bold {% if product.current_stock == 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-success{% endif %}">
+                                        {{ product.current_stock }}
+                                    </span>
+                                </td>
+                                <td>{{ product.minimum_stock }}</td>
+                                <td>
+                                    {% if product.current_stock == 0 %}
+                                        <span class="badge badge-out-stock">Sin stock</span>
+                                    {% elif product.is_low_stock %}
+                                        <span class="badge badge-low-stock">Stock bajo</span>
+                                    {% else %}
+                                        <span class="badge badge-normal-stock">Normal</span>
+                                    {% endif %}
+                                </td>
+                                <td>${{ product.unit_price }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'product_detail' product.pk %}" 
+                                           class="btn btn-outline-info" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'product_edit' product.pk %}" 
+                                           class="btn btn-outline-primary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Navegación de páginas">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.stock_status %}&stock_status={{ request.GET.stock_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    &laquo; Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.stock_status %}&stock_status={{ request.GET.stock_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.stock_status %}&stock_status={{ request.GET.stock_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Siguiente &raquo;
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No se encontraron productos</h5>
+                <p class="text-muted">Intenta modificar los filtros o crea un nuevo producto.</p>
+                <a href="{% url 'product_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Crear Producto
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

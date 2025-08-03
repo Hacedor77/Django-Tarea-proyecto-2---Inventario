@@ -1,0 +1,217 @@
+<!-- templates/inventory/base.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Inventario{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <style>
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #4b4ea2ff 100%);
+            min-height: 100vh;
+            padding: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 15px 20px;
+            border-radius: 0;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover, 
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #2e24baff 0%, #7d80ceff 100%);
+            color: white;
+        }
+        
+        .stat-card-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .stat-card-warning {
+            background: linear-gradient(135deg, #ffb4d4ff 0%, #ff7285ff 100%);
+        }
+        
+        .stat-card-danger {
+            background: linear-gradient(135deg, #fa6b4be6 0%, #f3b0a1e6 100%);
+        }
+        
+        .table th {
+            background-color: #667eea;
+            color: white;
+            border: none;
+        }
+        
+        .badge-low-stock {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .badge-out-stock {
+            background-color: #dc3545;
+        }
+        
+        .badge-normal-stock {
+            background-color: #28a745;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #7b90eeff 0%, #554ba2ff 100%);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-1px);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar">
+                <div class="d-flex flex-column">
+                    <div class="p-3 text-center">
+                        <h4 class="text-white mb-0">
+                            <i class="fas fa-boxes"></i> Inventario
+                        </h4>
+                    </div>
+                    
+                    <nav class="nav flex-column">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                           href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        
+                        <a class="nav-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'product_list' %}">
+                            <i class="fas fa-box"></i> Productos
+                        </a>
+                        
+                        <a class="nav-link {% if 'movement' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'movement_list' %}">
+                            <i class="fas fa-exchange-alt"></i> Movimientos
+                        </a>
+                        
+                        <a class="nav-link {% if request.resolver_match.url_name == 'low_stock_alerts' %}active{% endif %}" 
+                           href="{% url 'low_stock_alerts' %}">
+                            <i class="fas fa-exclamation-triangle"></i> Alertas
+                        </a>
+                        
+                        <a class="nav-link {% if request.resolver_match.url_name == 'csv_import' %}active{% endif %}" 
+                           href="{% url 'csv_import' %}">
+                            <i class="fas fa-file-import"></i> Importar CSV
+                        </a>
+                        
+                        <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
+                        
+                        <a class="nav-link" href="/admin/">
+                            <i class="fas fa-cog"></i> Administración
+                        </a>
+                        
+                        <a class="nav-link" href="{% url 'export_products' %}">
+                            <i class="fas fa-download"></i> Exportar
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main content -->
+            <div class="col-md-10 main-content">
+                <!-- Top navbar -->
+                <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+                    <div class="container-fluid">
+                        <span class="navbar-brand mb-0 h1">
+                            {% block page_title %}Sistema de Inventario{% endblock %}
+                        </span>
+                        
+                        <div class="navbar-nav ms-auto">
+                            <div class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" 
+                                   data-bs-toggle="dropdown">
+                                    <i class="fas fa-user"></i> {{ user.username }}
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/admin/password_change/">
+                                        <i class="fas fa-key"></i> Cambiar contraseña
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/admin/logout/">
+                                        <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Messages -->
+                {% if messages %}
+                    <div class="container-fluid mb-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Page content -->
+                <div class="container-fluid">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

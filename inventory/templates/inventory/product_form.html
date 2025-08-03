@@ -1,0 +1,148 @@
+<!-- templates/inventory/product_form.html -->
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Inventario{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.code.label_tag }}
+                                {{ form.code }}
+                                {% if form.code.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.code.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.name.label_tag }}
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.name.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label_tag }}
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small">
+                                {{ form.description.errors|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.category.label_tag }}
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.category.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.supplier.label_tag }}
+                                {{ form.supplier }}
+                                {% if form.supplier.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.supplier.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.unit_price.label_tag }}
+                                {{ form.unit_price }}
+                                {% if form.unit_price.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.unit_price.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.minimum_stock.label_tag }}
+                                {{ form.minimum_stock }}
+                                {% if form.minimum_stock.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.minimum_stock.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.maximum_stock.label_tag }}
+                                {{ form.maximum_stock }}
+                                {% if form.maximum_stock.errors %}
+                                    <div class="text-danger small">
+                                        {{ form.maximum_stock.errors|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                Producto activo
+                            </label>
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if product %}Actualizar{% else %}Crear{% endif %}
+                        </button>
+                        <a href="{% url 'product_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
